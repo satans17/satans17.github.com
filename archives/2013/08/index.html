@@ -3,15 +3,14 @@
 <head>
   <meta charset="utf-8">
   
-  <title>about | Satans17</title>
+  <title>Archives: 2013/8 | Satans17</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="og:type" content="blog">
-<meta name="og:title" content="about">
-<meta name="og:url" content="http://satans17.github.io//about/index.html">
+<meta name="og:title">
+<meta name="og:url" content="http://satans17.github.io//archives/2013/08/">
 <meta name="og:image">
 <meta name="og:site_name" content="Satans17">
-<meta name="og:description" content="网名：satans17/何畏
-email：satans17#gmail.com">
+<meta name="og:description">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternative" href="/atom.xml" title="Satans17" type="application/atom+xml">
@@ -60,10 +59,12 @@ email：satans17#gmail.com">
   </div>
 </header>
       <div class="outer">
-        <section id="main"><article id="page-undefined" class="article article-type-page" itemscope itemprop="blogPost">
+        <section id="main">
+  
+    <article id="post-教你如何耍流氓" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
-    <a href="/about/index.html" class="article-date">
-  <time datetime="2014-04-10T02:29:29.000Z" itemprop="datePublished">Apr 10 2014</time>
+    <a href="/2013/08/04/教你如何耍流氓/" class="article-date">
+  <time datetime="2013-08-04T05:09:59.000Z" itemprop="datePublished">Aug 4 2013</time>
 </a>
     
   </div>
@@ -73,8 +74,8 @@ email：satans17#gmail.com">
       <header class="article-header">
         
   
-    <h1 class="article-title" itemprop="name">
-      about
+    <h1 itemprop="name">
+      <a class="article-title" href="/2013/08/04/教你如何耍流氓/">教你如何耍流氓</a>
     </h1>
   
 
@@ -82,49 +83,48 @@ email：satans17#gmail.com">
     
     <div class="article-entry" itemprop="articleBody">
       
-        <ul>
-<li>网名：satans17/何畏</li>
-<li>email：satans17#gmail.com</li>
-</ul>
+        <p>我承认我是标题党 ：）<br>其实不是什么新鲜玩意，觉得有意思就发出来玩玩。</p>
+<h3 id="一行代码“劫持”你的浏览器">一行代码“劫持”你的浏览器</h3>
+<p>直接看代码</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>window.opener.location.href = <span class="string">"http://www.taobao.com"</span>;
+</pre></td></tr></table></figure>
+
+<p>这段代码非常简单，window.opener也是一个非常常见的对象，上面这种用法可能很多人用过<br>如果你还没明白为什么这是一段流氓代码，那说明你是一个纯洁的同志？</p>
+<p>试想一下：<br>假如你访问了淘宝的detail，点了一个外链的广告页面，这个页面中执行了一句：<br>window.opener.location.href = “钓鱼网站”;<br>后果是不是很严重呢？<br>据说很多人都使用过这种方法来劫持流量</p>
+<p>演示：<a href="http://sandbox.runjs.cn/show/d7d7lugq" target="_blank">http://sandbox.runjs.cn/show/d7d7lugq</a></p>
+<h3 id="强制留在本页">强制留在本页</h3>
+<p>这个没什么好说的，看代码你就知道很流氓</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+</pre></td><td class="code"><pre>window.onbeforeunload = <span class="function"><span class="keyword">function</span><span class="params">()</span>{</span>
+    setTimeout( <span class="function"><span class="keyword">function</span><span class="params">()</span>{</span> location.href = <span class="string">"#"</span>; }, <span class="number">0</span> );
+};
+</pre></td></tr></table></figure>
+
+<p>除了用来耍流氓，不知道大家有没有想到比较正常的使用场景 </p>
+<p>演示：<a href="http://sandbox.runjs.cn/show/84aftk1b" target="_blank">http://sandbox.runjs.cn/show/84aftk1b</a></p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://satans17.github.io/about/index.html" data-id="c1b9269o71d9nmv3" class="article-share-link">Share</a>
+      <a data-url="http://satans17.github.io/2013/08/04/教你如何耍流氓/" data-id="c2ic005gu5dawx1h" class="article-share-link">Share</a>
       
       
     </footer>
   </div>
   
-    
-  
 </article>
 
 
-<section id="comments">
-<a name="comments"></a>
-<!-- 多说评论框 start -->
-  <div class="ds-thread" data-thread-key="http://satans17.github.io/about/index.html" data-title="about" data-url="http://satans17.github.io/about/index.html"></div>
-<!-- 多说评论框 end -->
-<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
-<script type="text/javascript">
-var duoshuoQuery = {short_name:"satans17"};
-  (function() {
-    var ds = document.createElement('script');
-    ds.type = 'text/javascript';ds.async = true;
-    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
-    ds.charset = 'UTF-8';
-    (document.getElementsByTagName('head')[0] 
-     || document.getElementsByTagName('body')[0]).appendChild(ds);
-  })();
-  </script>
-<!-- 多说公共JS代码 end -->
-</section>
 
 
 
 
 
+  
+  
 </section>
         
           <aside id="sidebar">

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>CSS3 Transitions 你可能不知道的知识点 | Satans17</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="og:type" content="blog">
+<meta name="og:title" content="CSS3 Transitions 你可能不知道的知识点">
+<meta name="og:url" content="http://satans17.github.io//2013/11/02/css3-transitions-你可能不知道的知识点/">
+<meta name="og:image" content="http://gtms01.alicdn.com/tps/i1/T1GjgcFm4eXXbWpdou-1000-852.png">
+<meta name="og:site_name" content="Satans17">
+<meta name="og:description" content="如何临时让transition失效
+我们给一个element设置了transition效果，但某些特殊情况，我们希望让transition临时失效。我们第一反应就是先移除transition设置，等其他属性设置完成之后再还原transition设置。但浏览器有时候会让我们感觉事与愿违看下面这段代码，你觉得会不会有transition动画效果？
+1
+2
+3
+4
+5
+6
+7
+8
+&lt;div id=">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternative" href="/atom.xml" title="Satans17" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+<!--   <link href="http://fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css"> -->
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Satans17</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><input type="submit" value="&#xF002;" class="search-form-submit"><input type="hidden" name="q" value="site:http://satans17.github.io/"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-css3-transitions-你可能不知道的知识点" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2013/11/02/css3-transitions-你可能不知道的知识点/" class="article-date">
+  <time datetime="2013-11-02T12:28:49.000Z" itemprop="datePublished">Nov 2 2013</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CSS3 Transitions 你可能不知道的知识点
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="如何临时让transition失效">如何临时让transition失效</h2>
+<p>我们给一个element设置了transition效果，但某些特殊情况，我们希望让transition临时失效。<br>我们第一反应就是先移除transition设置，等其他属性设置完成之后再还原transition设置。<br>但浏览器有时候会让我们感觉事与愿违<br>看下面这段代码，你觉得会不会有transition动画效果？</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre><span class="tag">&lt;<span class="title">div</span> <span class="attribute">id</span>=<span class="value">"test"</span>&gt;</span><span class="tag">&lt;/<span class="title">div</span>&gt;</span>
+<span class="tag">&lt;<span class="title">script</span>&gt;</span><span class="javascript">
+    window.onload = <span class="function"><span class="keyword">function</span><span class="params">()</span>{</span>
+        <span class="keyword">var</span> div = document.getElementById(<span class="string">"test"</span>);
+        div.style.width=<span class="string">"500px"</span>;
+        div.style.transition=<span class="string">"all 2s ease"</span>;
+    };
+</span><span class="tag">&lt;/<span class="title">script</span>&gt;</span>
+</pre></td></tr></table></figure>
+
+<p>答案是有的。<br>之所以会出现这种情况，与javascript单线程有关，给dom设置style，只是一个赋值的过程，浏览器引擎不会立即去渲染，所以会看到动画效果。<br>那么遇到这种情况，如何去解决呢？<br>大家可能首先会想到 setTimeout()，但感觉不是那么自然。</p>
+<p>还有另外一种更好的方法，实用getComputedStyle()方法强制让当前设置生效</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+</pre></td><td class="code"><pre><span class="tag">&lt;<span class="title">div</span> <span class="attribute">id</span>=<span class="value">"test"</span>&gt;</span><span class="tag">&lt;/<span class="title">div</span>&gt;</span>
+<span class="tag">&lt;<span class="title">script</span>&gt;</span><span class="javascript">
+    window.onload = <span class="function"><span class="keyword">function</span><span class="params">()</span>{</span>
+        <span class="keyword">var</span> div = document.getElementById(<span class="string">"test"</span>);
+        div.style.width=<span class="string">"500px"</span>;
+        <span class="comment">//获取计算后的宽度</span>
+        window.getComputedStyle(div).width;
+        div.style.transition=<span class="string">"all 2s ease"</span>;
+    };
+</span><span class="tag">&lt;/<span class="title">script</span>&gt;</span>
+</pre></td></tr></table></figure>
+
+<h2 id="transitionend_事件">transitionend 事件</h2>
+<p>大家都知道，KISSY1.4中支持了transition动画，用法如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre>KISSY.add(<span class="function"><span class="keyword">function</span><span class="params">(S,Node,Anim)</span>{</span>
+    Node.all(<span class="string">"#test"</span>).animate({
+            transform: <span class="string">"translate3d(-100px,0,0)"</span>
+        }, {
+            duration: <span class="number">.3</span>,
+            <span class="comment">//增加useTransition配置即可</span>
+            useTransition:<span class="literal">true</span>,
+            easing: <span class="string">"ease-out"</span>,
+            complete: <span class="function"><span class="keyword">function</span><span class="params">()</span>{</span>
+                <span class="comment">//your code</span>
+            }
+        });
+},{
+    requires:[<span class="string">'node'</span>,<span class="string">'anim'</span>]
+})
+</pre></td></tr></table></figure>
+
+<p>刚开始很好奇，觉得肯定需要不少代码才能实现支持原生动画，看了<a href="https://github.com/kissyteam/kissy/blob/master/src/anim/sub-modules/transition/src/transition.js" target="_blank">源码</a>之后才发现其实挺简单，关键点是transitionend事件</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+</pre></td><td class="code"><pre><span class="tag">&lt;<span class="title">style</span>&gt;</span><span class="css">
+<span class="id">#test</span> <span class="rules">{
+    <span class="rule"><span class="attribute">width</span>:<span class="value"><span class="number">200</span>px</span></span>;
+    <span class="rule"><span class="attribute">height</span>:<span class="value"> <span class="number">200</span>px</span></span>;
+    <span class="rule"><span class="attribute">padding</span>:<span class="value"><span class="number">10</span>px</span></span>;
+    <span class="rule"><span class="attribute">background-color</span>:<span class="value"> <span class="hexcolor">#8bb8f3</span></span></span>;
+    <span class="rule"><span class="attribute">transition</span>:<span class="value"> all <span class="number">1</span>s ease</span></span>;
+<span class="rule">}</span></span>
+<span class="id">#test</span><span class="pseudo">:hover</span> <span class="rules">{
+    <span class="rule"><span class="attribute">background-color</span>:<span class="value"> <span class="hexcolor">#ff5500</span></span></span>;
+<span class="rule">}</span></span>
+</span><span class="tag">&lt;/<span class="title">style</span>&gt;</span>
+<span class="tag">&lt;<span class="title">div</span> <span class="attribute">id</span>=<span class="value">"test"</span>&gt;</span>touch me<span class="tag">&lt;/<span class="title">div</span>&gt;</span>
+<span class="tag">&lt;<span class="title">script</span>&gt;</span><span class="javascript">
+    document.getElementById(<span class="string">"test"</span>).addEventListener(<span class="string">"transitionend"</span>,<span class="function"><span class="keyword">function</span><span class="params">(ev)</span>{</span>
+        console.log(ev);
+        alert(<span class="number">1</span>);
+    })
+</span><span class="tag">&lt;/<span class="title">script</span>&gt;</span>
+</pre></td></tr></table></figure>
+
+<h2 id="transition与visibility">transition与visibility</h2>
+<p><img src="http://gtms01.alicdn.com/tps/i1/T1GjgcFm4eXXbWpdou-1000-852.png" alt="http://gtms01.alicdn.com/tps/i1/T1GjgcFm4eXXbWpdou-1000-852.png"></p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>-webkit-<span class="attribute">transition</span><span class="value">: visibility <span class="number">0</span>s linear .<span class="number">2</span>s;</span>
+</pre></td></tr></table></figure>
+
+<p>在研究google phone版导航菜单效果的时候，无意中发现css中有上面这么一段。<br>visibility不就是用来实现显示、隐藏效果的吗，与过度有什么关系呢？<br>不过直觉告诉我，google的工程师不会这么无聊，写一段毫无用处的代码</p>
+<p>用相关的关键字搜索了一下，果然暗藏玄机<br>不过用一两句话说不明白，直接看这篇文章 <a href="http://www.zhangxinxu.com/wordpress/2013/05/transition-visibility-show-hide/" target="_blank">http://www.zhangxinxu.com/wordpress/2013/05/transition-visibility-show-hide/</a></p>
+<p>看来任何细节深挖下去都会有收获。</p>
+<h2 id="启用硬件加速">启用硬件加速</h2>
+<p>这个大家可能都知道，方法也有好几种，介绍的文章也多，这里顺便记录一下。</p>
+<p>变化某些属性，比如 width，left，浏览器会重新计算每一帧的显示效果，这严重影响速度，尤其是在移动设备上。解决办法就是让 GPU 来做这些运算，简单的说，就是将元素转化为图片再制作变化效果，而不是重新计算每一帧的 CSS 样式。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+</pre></td><td class="code"><pre><span class="class">.test</span>{
+    <span class="comment">//触发GPU加速</span>
+    <span class="attribute">transform</span><span class="value">: translate3d(<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>);</span>
+}
+</pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://satans17.github.io/2013/11/02/css3-transitions-你可能不知道的知识点/" data-id="yy15u4henx6hmmyt" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2013/11/21/请各位小伙伴们帮忙做一个简单的测试/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          请各位小伙伴们帮忙做一个简单的测试
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2013/08/04/教你如何耍流氓/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">教你如何耍流氓</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+<section id="comments">
+<a name="comments"></a>
+<!-- 多说评论框 start -->
+  <div class="ds-thread" data-thread-key="http://satans17.github.io/2013/11/02/css3-transitions-你可能不知道的知识点/" data-title="CSS3 Transitions 你可能不知道的知识点" data-url="http://satans17.github.io/2013/11/02/css3-transitions-你可能不知道的知识点/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"satans17"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+     || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+  </script>
+<!-- 多说公共JS代码 end -->
+</section>
+
+
+
+
+
+
+
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  
+    
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04">April 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/01">January 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12">December 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/11">November 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/08">August 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/04">April 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01">January 2013</a><span class="archive-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2014/04/04/也谈基于nodejs的全栈式开发（基于nodejs的前后端分离）/">也谈基于NodeJS的全栈式开发（基于NodeJS的前后端分离）</a>
+          </li>
+        
+          <li>
+            <a href="/2014/01/06/移动开发前端框架选型/">移动开发前端框架选型</a>
+          </li>
+        
+          <li>
+            <a href="/2013/12/09/viewport笔记/">viewport笔记</a>
+          </li>
+        
+          <li>
+            <a href="/2013/11/21/请各位小伙伴们帮忙做一个简单的测试/">请各位小伙伴们帮忙做一个简单的测试</a>
+          </li>
+        
+          <li>
+            <a href="/2013/11/02/css3-transitions-你可能不知道的知识点/">CSS3 Transitions 你可能不知道的知识点</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Comments</h3>
+    <div class="widget">
+<!-- 多说最新评论 start -->
+	<div class="ds-recent-comments" data-num-items="5" data-show-avatars="1" data-show-time="1" data-show-title="1" data-show-admin="1" data-excerpt-length="70"></div>
+<!-- 多说最新评论 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"satans17"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2014 Satans17<br>
+      Powered by <a href="http://zespia.tw/hexo/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+    <a href="/about" class="mobile-nav-link">About</a>
+  
+</nav>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script type="text/javascript" src="/js/script.js"></script>
+  </div>
+</body>
+</html>
