@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>移动开发前端框架选型 | Satans17</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="og:type" content="blog">
+<meta name="og:title" content="移动开发前端框架选型">
+<meta name="og:url" content="http://satans17.github.io//2014/01/06/移动开发前端框架选型/">
+<meta name="og:image" content="http://gtms01.alicdn.com/tps/i1/T1VQ0BFxNhXXc_Bkby-500-293.jpg">
+<meta name="og:site_name" content="Satans17">
+<meta name="og:description" content="随着公司无线ALL IN，前端同学们或多或少都在接触一些无线的业务。即使没做过无线的同学，基本上也听过关于无线开发的一些难点，比如省电、流量、速度、兼容性等等
+这些点给我们的印象就是，我们开发的webapp就一定得更小，更快！我觉得这个没问题，在PC上，我们也一直在探索怎么把这两点做到极致！
+所以，很多之前用KISSY做PC开发的同学会有一点疑虑：做无线开发我们还用KISSY吗？也有一些同学问我，">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternative" href="/atom.xml" title="Satans17" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+<!--   <link href="http://fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css"> -->
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Satans17</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><input type="submit" value="&#xF002;" class="search-form-submit"><input type="hidden" name="q" value="site:http://satans17.github.io/"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-移动开发前端框架选型" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/01/06/移动开发前端框架选型/" class="article-date">
+  <time datetime="2014-01-06T08:36:21.000Z" itemprop="datePublished">Jan 6 2014</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      移动开发前端框架选型
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>随着公司无线ALL IN，前端同学们或多或少都在接触一些无线的业务。<br>即使没做过无线的同学，基本上也听过关于无线开发的一些难点，比如省电、流量、速度、兼容性等等</p>
+<p>这些点给我们的印象就是，我们开发的webapp就一定得更小，更快！<br>我觉得这个没问题，在PC上，我们也一直在探索怎么把这两点做到极致！</p>
+<p>所以，很多之前用KISSY做PC开发的同学会有一点疑虑：做无线开发我们还用KISSY吗？<br>也有一些同学问我，KISSY有没有针对移动开发的版?<br>已经用了KISSY做移动开发的同学，KISSY的体积成为了他们的心病，因为<a href="http://zeptojs.com/" target="_blank">zepto</a>才9.2KB（when gzipped）</p>
+<p>其实几周前，我也在纠结KISSY那几十KB的大小<br>还发起过一个讨论<a href="http://www.atatech.org/qa/detail/17973" target="_blank">无线web性能衡量的一些标是什么？</a><br>经过一段时间的实践，关于这个问题我有一些自己的看法。<br>下面我通过一些数据和我的经验聊下我的看法。</p>
+<h3 id="关于兼容性代码">关于兼容性代码</h3>
+<p>KISSY是一款全终端全浏览器支持的JavaScript框架。<br>所以大家一定会想，KISSY中一定有大量的兼容性代码，对于移动开发，这些代码都是多余的。<br>KISSY有兼容性代码没错，但是！做移动开发，其实我们只是不用兼容低版本IE，其他的兼容都还是需要的。<br>如果大家看过KISSY源码，KISSY是有条件加载的，在高级浏览器中，KISSY不会载入IE哪些兼容性代码。<br>虽然不是非常彻底，但是真没多出多少代码。<br>如果你不相信，认为彻底去掉IE的兼容性代码可以让体积压缩很多，我们可以看看JQuery。</p>
+<p><img src="http://gtms01.alicdn.com/tps/i1/T1VQ0BFxNhXXc_Bkby-500-293.jpg" alt="jquery两个版本大小对比"></p>
+<ul>
+<li>jquery-1.10.2<ul>
+<li>压缩前：273KB</li>
+<li>压缩后：93KB</li>
+</ul>
+</li>
+<li>jquery-2.0.3<ul>
+<li>压缩前：242KB</li>
+<li>压缩后：84KB</li>
+</ul>
+</li>
+</ul>
+<p>大家都知道juqery2.x是不支持IE6/7/8的<br>压缩后体积相差9KB，这个差值比我想象的要少很多。<br>在功能相当的情况下，指望不兼容IE6/7/8就能让代码体积较少很多，貌似也不是很现实。</p>
+<h3 id="关于体积">关于体积</h3>
+<p>KISSY常用的功能有seed,dom,evnet,node,anim,ajax，我看了下大小</p>
+<ul>
+<li>KISSY Core（seed+dom+event+node+anim+ajax）<ul>
+<li>压缩后：131(42+89)KB</li>
+<li>GZIP： 47.9KB</li>
+</ul>
+</li>
+</ul>
+<p>功能类似的组合有seajs+jquery,seajs+zepto,我与KISSY core对比下大小</p>
+<p><img src="http://gtms01.alicdn.com/tps/i1/T1f6RAFq4dXXcZmAfy-500-296.jpg" alt="KISSY core,JQuery,ZEPTO,"></p>
+<p>zepto,jquery都加上了seajs 6.6KB</p>
+<p>咋一看，在体积上KISSY位居榜首<br>不过这里得强调下，虽然功能类似，KISSY功能比另外两个强大很多。</p>
+<p>很多是经常用到的功能，当然你也可以自己实现，但是你能保证稳定性，兼容性，以及向后兼容吗？</p>
+<p>47.9到底有多大呢，有参照物或许能让你感觉更直观，以下数据都是gzip之后的数据。</p>
+<p><img src="http://gtms01.alicdn.com/tps/i1/T1MwpxFAheXXc_Bkby-500-293.jpg" alt="KISSY core大小参照"></p>
+<p>KISSY core的体积与大部分网站的总体积比起来也还好<br>像etao这样的就显得略蛋疼，网站23%的大小是KISSY core的大小。</p>
+<p>对于“大小”这事，看了上面的图，大家是不是有了更直观的认识？</p>
+<p>有些同学说KISSY还是太大，这么大的体积，可能会导致手机运行变慢<br>这个假设我暂时没法反驳<br>但是，咱们来看看大名鼎鼎的sencha touch</p>
+<p>打开这个demo你可以看到sencha touch的体积<br><a href="http://cdn.sencha.io/touch/sencha-touch-2.3.1/built-examples/touchtomatoes/index.html" target="_blank">http://cdn.sencha.io/touch/sencha-touch-2.3.1/built-examples/touchtomatoes/index.html</a></p>
+<p>sencha-touch-all-debug.js(2.3.1)</p>
+<ul>
+<li>3.5M</li>
+<li>912KB(gzip)</li>
+</ul>
+<p>是的，你没看错，是3.5M，gzip之后也有将近1M。</p>
+<p>有些同学可能会说，环境不一样，老外用的手机好，网络也好！<br>手机好不好不是很清楚，网络确实比我们好。<br>但是，关于网络，我也正好有想吐槽的。</p>
+<h3 id="关于2G网络">关于2G网络</h3>
+<p>2g网络真的很慢，可以去我写的demo体验一下<br><a href="http://www.atatech.org/article/detail/11922/786" target="_blank">http://www.atatech.org/article/detail/11922/786</a></p>
+<p>有些同学规划产品前，把2G网络当作一个首要的衡量标准，认为一定要保证2G网络的体验。<br>为了省几十KB的流程，甚至不惜砍功能，改方案！<br>真的有必要吗亲？</p>
+<p>2G用户一个月30M流量，刷微信都来不够<br>你的产品对于这部分用户真的这么重要吗？<br>真的有必要为了他们牺牲3g,wifi用户的体验么？<br>我觉得可以多掂量一下！</p>
+<p>有时候就应该分清主次，学会放弃，大踏步的迈出步子！！<br>据说即将发布的淘宝主客户端4.0版本不支持android2.3，android开发的同学是不是因此可以不用996了！</p>
+<h3 id="适合移动开发的前端框架">适合移动开发的前端框架</h3>
+<p>这个节标题是很多同学的一个疑问，但是这种说法是有问题的。<br>做框架选型，首先得看你的需求，只有适合某个需求的框架：</p>
+<ul>
+<li>如果仅仅是一个资讯类的适合手机终端的站点，例如sina.cn，那么你要考虑的是加载速度</li>
+<li>如果是一个功能复杂的webapp，你得考虑整体的架构和性能</li>
+<li>如果你要的是一个跨终端、跨浏览器的响应式解决方案，那么你就得考虑兼容性</li>
+</ul>
+<p>如果你想找一个库同事解决上面所有问题，貌似不太显示，就是鱼和熊掌不可兼得。<br>简单分析下，很容易找到适合自己场景的：</p>
+<ul>
+<li>如果是第一种需求，zepto这种小库比较适合，反正也不会用到很多功能，就算是原生写，也没多少代码</li>
+<li>第二种需求，JQueryMobile,KISSY，Sencha这样的框架是个不错的注意。你需要用到大量的特性，组件支持，还要保证项目的架构稳定。</li>
+<li>第三种需求，我暂时还没有想到比KISSY更好的 ：）</li>
+</ul>
+<p>反正很难有一个库满足所有需求，所以一切皆权衡！！</p>
+<h3 id="关于KISSY_for_mobile">关于KISSY for mobile</h3>
+<p>有一个好消息，风驰团队发起了一个KISSY MINI的分支项目，目标是功能比seajs+zepto强大，但是体积与他们相当。<br>等这个项目发布，做一套这样简单的展示型的网站再也不用纠结了</p>
+<p>按照承玉的思路，KISSY本身近期应该还是会以全终端全浏览器兼容的思路发展。<br>不过承玉近期主要的工作都是在做移动相关的组件支持，到时候会提供一整套webapp的解决方案，有需求的同学敬请期待吧！</p>
+<h3 id="最后">最后</h3>
+<p>上面说了这么多，真的不是在忽悠大家用KISSY<br>只是想让大家有一个清醒的，直观的认识。</p>
+<p>如果你觉得seajs,zepto,jquery,sencha中的任何一个更适合你的需要场景<br>放心大胆的用，不用纠结这纠结哪的<br>那个产品不是几个月重构一次，有问题了咱再改<br>不要为了几十KB的体积纠结得饭都吃不下<br>放心大胆大踏步的去做！<br>阿里无线起步晚，现阶段，我们最重要的任务是把步子迈出去，把产品做出来！！</p>
+<hr>
+<p>文章同时发布在<a href="http://blog.kissyui.com/2014/01/06/移动框架选型/" target="_blank">http://blog.kissyui.com/</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://satans17.github.io/2014/01/06/移动开发前端框架选型/" data-id="xfv7uqs5lvuct58d" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2014/04/04/也谈基于nodejs的全栈式开发（基于nodejs的前后端分离）/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          也谈基于NodeJS的全栈式开发（基于NodeJS的前后端分离）
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2013/12/09/viewport笔记/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">viewport笔记</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+<section id="comments">
+<a name="comments"></a>
+<!-- 多说评论框 start -->
+  <div class="ds-thread" data-thread-key="http://satans17.github.io/2014/01/06/移动开发前端框架选型/" data-title="移动开发前端框架选型" data-url="http://satans17.github.io/2014/01/06/移动开发前端框架选型/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"satans17"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+     || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+  </script>
+<!-- 多说公共JS代码 end -->
+</section>
+
+
+
+
+
+
+
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  
+    
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04">April 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/01">January 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12">December 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/11">November 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/08">August 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/04">April 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01">January 2013</a><span class="archive-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2014/04/04/也谈基于nodejs的全栈式开发（基于nodejs的前后端分离）/">也谈基于NodeJS的全栈式开发（基于NodeJS的前后端分离）</a>
+          </li>
+        
+          <li>
+            <a href="/2014/01/06/移动开发前端框架选型/">移动开发前端框架选型</a>
+          </li>
+        
+          <li>
+            <a href="/2013/12/09/viewport笔记/">viewport笔记</a>
+          </li>
+        
+          <li>
+            <a href="/2013/11/21/请各位小伙伴们帮忙做一个简单的测试/">请各位小伙伴们帮忙做一个简单的测试</a>
+          </li>
+        
+          <li>
+            <a href="/2013/11/02/css3-transitions-你可能不知道的知识点/">CSS3 Transitions 你可能不知道的知识点</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Comments</h3>
+    <div class="widget">
+<!-- 多说最新评论 start -->
+	<div class="ds-recent-comments" data-num-items="5" data-show-avatars="1" data-show-time="1" data-show-title="1" data-show-admin="1" data-excerpt-length="70"></div>
+<!-- 多说最新评论 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"satans17"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2014 Satans17<br>
+      Powered by <a href="http://zespia.tw/hexo/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+    <a href="/about" class="mobile-nav-link">About</a>
+  
+</nav>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script type="text/javascript" src="/js/script.js"></script>
+  </div>
+</body>
+</html>
