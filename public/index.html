@@ -61,6 +61,437 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-node稳定性的研究心得" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/05/04/node稳定性的研究心得/" class="article-date">
+  <time datetime="2014-05-04T03:06:14.000Z" itemprop="datePublished">May 4 2014</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/05/04/node稳定性的研究心得/">Node稳定性的研究心得</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>目前大部分Web服务器，如Apache，都使用多线程的方式响应多用户请求，即一个线程服务一个用户请求。这种模式其中一个好处是，当某个请求的线程上抛出的异常没被捕获，只会影响当前这个线程，不会影响其他请求。</p>
+<p>由于Node执行在单线程上，一旦线程上抛的异常没有被捕获，就会引起整个进程的崩溃。所以对Node服务的异常处理、保证进程的稳定性非常重要。</p>
+<p>再好的程序员也不敢保证自己的代码不出现异常，除了尽可能捕获可能出现的异常，我们还需要通过一些规范减少异常发生，通过单元测试辅助我们验证代码，通过一些工具保证服务的稳定性。下面我从这几个方面探讨如何保证Node的稳定性。</p>
+<h2 id="一_异常捕获">一 异常捕获</h2>
+<p>提升稳定性最直接的方式就是尽可能的捕捉异常，Node提供3种方式。</p>
+<h3 id="1-1_try/catch">1.1 try/catch</h3>
+<p>在大多数语言中，try/catch是捕获异常的好手，能确保我们的代码不进入不可控流程。但是由于Node回调/异步的特性，我们无法通过try/catch来捕捉所有的异常，看下面的示例：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre><span class="keyword">try</span> {
+    process.nextTick(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="string">"error"</span>);
+    });
+} <span class="keyword">catch</span> (err) {
+    <span class="comment">//can not catch it</span>
+    console.log(err);
+}
+</pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre><span class="keyword">try</span> {
+    setTimeout(<span class="function"><span class="keyword">function</span><span class="params">()</span>{</span>
+        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="string">"error"</span>);
+    },<span class="number">1</span>)
+} <span class="keyword">catch</span> (err) {
+    <span class="comment">//can not catch it</span>
+    console.log(err);
+}
+</pre></td></tr></table></figure>
+
+<p>上面的代码没有像预期的那样帮我们捕获异常，后果就是这个未被捕获的异常导致整个Node进程crash，所以Node中try/catch的方式不是那么管用。<br>如果有一种方法能帮我们全局捕获异常，Node服务就不会轻易挂掉了。Node确实提供了这种方式，不过却不能完全满足我们的需求。</p>
+<h3 id="1-2_uncaughtException">1.2 uncaughtException</h3>
+<p>当一个异常未被捕获，冒泡回归到事件循环中就会触发uncaughtException事件。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre></td><td class="code"><pre>process.on(<span class="string">'uncaughtException'</span>, <span class="function"><span class="keyword">function</span><span class="params">(err)</span> {</span>
+    console.error(<span class="string">'Error caught in uncaughtException event:'</span>, err);
+});
+
+
+<span class="keyword">try</span> {
+    setTimeout(<span class="function"><span class="keyword">function</span><span class="params">()</span>{</span>
+        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="string">"error"</span>);
+    },<span class="number">1</span>)
+} <span class="keyword">catch</span> (err) {
+    <span class="comment">//can not catch it</span>
+    console.log(err);
+}
+</pre></td></tr></table></figure>
+
+<p>只要给uncaughtException配置了回调，Node进程不会异常退出，但异常发生的上下文已经丢失，我们无法给出友好的返回，比如告诉用户哪里出问题了。而且由于uncaughtException事件发生后，会丢失当前环境的堆栈，可能导致Node不能正常进行内存回收，从而导致内存泄露。所以，uncaughtException的正确使用姿势是，当uncaughtException触发，记录error日志，然后结束Node进程，我们通过日志监控，报警及时解决异常。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>process.on(<span class="string">'uncaughtException'</span>, <span class="function"><span class="keyword">function</span><span class="params">(err)</span> {</span>
+    <span class="comment">// 记录日志</span>
+    logger(err);
+    <span class="comment">// 结束进程</span>
+    process.exit(<span class="number">1</span>);
+});
+</pre></td></tr></table></figure>
+
+<h3 id="1-3_domain">1.3 domain</h3>
+<p>为了弥补try/catch和uncaughtException的不足，在node v0.8+版本的时候，发布了一个模块<code>domain</code>，这个模块能捕捉异步回调中出现的异常。<br>看下面的示例：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre><span class="keyword">var</span> d = domain.create();
+
+process.on(<span class="string">'uncaughtException'</span>, <span class="function"><span class="keyword">function</span><span class="params">(err)</span> {</span>
+    console.error(err);
+});
+
+d.on(<span class="string">'error'</span>, <span class="function"><span class="keyword">function</span><span class="params">(err)</span> {</span>
+    console.error(<span class="string">'Error caught by domain:'</span>, err);
+});
+
+d.run(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>
+    process.nextTick(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>
+        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="string">"test domain"</span>);
+    });
+});
+</pre></td></tr></table></figure>
+
+<p>运行代码我们会发现，异常会被domain捕获到，uncaughtException不会被触发。虽然我们对domain模块寄予厚望，不过目前domain模块的评级为“Unstable”，因为存在不少性能以及稳定性问题。<br>关于domain的详细介绍，可以看看以下几篇文章：</p>
+<ul>
+<li><a href="http://cnodejs.org/topic/516b64596d38277306407936" target="_blank">Node.js 异步异常的处理与domain模块解析</a></li>
+<li><a href="http://www.alloyteam.com/2013/12/node-js-series-exception-caught/" target="_blank">Node.js异常捕获额一些实践</a></li>
+<li><a href="http://www.atatech.org/articles/16061" target="_blank">Node.js之异常处理</a></li>
+</ul>
+<h2 id="二_阻止异常发生">二 阻止异常发生</h2>
+<p>我们当然无法阻止异常的发生，这里说的阻止异常发生，是希望大家能养成良好的编码习惯，严谨的思维逻辑，来尽可能减少代码抛出未捕获异常。</p>
+<h3 id="2-1_良好的异常处理习惯">2.1 良好的异常处理习惯</h3>
+<ul>
+<li>异步API编写规范：由于异步调用中回调函数里的异常无法被外部捕获，所以我们将API内部发生的异常作为第一个参数传递给回调函数，包括NodeJS官方的API是遵循这个规范的。</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+</pre></td><td class="code"><pre>fs.readFile(<span class="string">'/t.txt'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err, data)</span> {</span>
+  <span class="keyword">if</span> (err) <span class="keyword">throw</span> err;
+  console.log(data);
+});
+</pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="comment">// 不推荐的做法</span>
+<span class="function"><span class="keyword">function</span> <span class="title">fun</span><span class="params">(options,callback)</span>{</span>
+    <span class="keyword">if</span>(!options{
+        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="string">".."</span>)
+    }
+}
+
+<span class="comment">// 推荐的做法</span>
+<span class="function"><span class="keyword">function</span> <span class="title">fun</span><span class="params">(options,callback)</span>{</span>
+    <span class="keyword">if</span>(!options){
+        callback(err,<span class="literal">null</span>)
+    }
+}
+</pre></td></tr></table></figure>
+
+<ul>
+<li>严格校验用户的输入</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="function"><span class="keyword">function</span> <span class="title">doSth</span><span class="params">(cb)</span>{</span>
+    <span class="keyword">if</span>(<span class="keyword">typeof</span> cb === <span class="string">'function'</span>){
+        cb();
+    }
+}
+</pre></td></tr></table></figure>
+
+<ul>
+<li>使用try/catch处理可能出现异常的代码</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="keyword">var</span> obj;
+<span class="keyword">try</span>{
+    obj = <span class="built_in">JSON</span>.parse(<span class="string">''</span>)
+}<span class="keyword">catch</span>(e){
+    obj = {};
+}
+</pre></td></tr></table></figure>
+
+<ul>
+<li>不要直接在controller中抛异常，应该用500等状态更友好的返回错误</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="comment">// 不推荐的做法</span>
+app.get(<span class="string">'/item.html'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(req, res, next)</span> {</span>
+    <span class="keyword">if</span>(!query[<span class="string">"id"</span>]){
+        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="string">'no item id'</span>);
+    }
+});
+</pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="comment">// 推荐的做法</span>
+app.get(<span class="string">'/item.html'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(req, res, next)</span> {</span>
+    <span class="keyword">if</span>(!query[<span class="string">"id"</span>]){
+        next();
+    }
+});
+</pre></td></tr></table></figure>
+
+<h3 id="2-2_单元测试">2.2 单元测试</h3>
+<p>单元测试的重要性想必所有人都清楚，JS代码跑在浏览器端的时候我们未必会做，因为异常通常只会影响部分人使用的部分功能，不足以引起很多人的重视。JS代码跑在服务端情况完全不一样了，一旦出现异常，影响的是所有的用户，所以单元测试就显得非常重要。</p>
+<p>至于如何在NodeJS中写单元测试，可以看看两位大神的分享：</p>
+<ul>
+<li>苏千:<a href="http://fengmk2.cnpmjs.org/ppt/unittest-and-bdd-in-nodejs-with-mocha.html#slide-0" target="_blank">UnitTest in Nodejs 实战Nodejs单元测试</a></li>
+<li>朴灵:<a href="http://html5ify.com/unittesting/slides/index.html#/" target="_blank">NODE.JS UNIT TESTING</a></li>
+</ul>
+<h3 id="2-3_记录日志">2.3 记录日志</h3>
+<p>还是那句说，谁也不敢保证自己的代码不出现异常，因为有运行环境，网络环境等各种不稳定因素，所以建立健全的排查和跟踪机制就显得很重要，而日志就是实现这种机制的关键。<br>阿里线上环境已经有完善的日志监控体现，我们要做的就是去学会如何使用他。</p>
+<p>ali-logger:<a href="http://search.npm.taobao.net/package/ali-logger" target="_blank">http://search.npm.taobao.net/package/ali-logger</a></p>
+<h2 id="三_多进程架构">三 多进程架构</h2>
+<h3 id="3-1_cluster">3.1 cluster</h3>
+<p>cluster模块用于创建共享端口的多进程模式,这种模式使多个进程间共享一个监听状态的socket，并由系统将accept的connection分配给不同的子进程。<br>文档上有一个简单的示例：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+</pre></td><td class="code"><pre><span class="keyword">var</span> cluster = <span class="built_in">require</span>(<span class="string">'cluster'</span>);
+<span class="keyword">var</span> http = <span class="built_in">require</span>(<span class="string">'http'</span>);
+<span class="keyword">var</span> numCPUs = <span class="built_in">require</span>(<span class="string">'os'</span>).cpus().length;
+
+<span class="keyword">if</span> (cluster.isMaster) {
+  <span class="comment">// Fork workers.</span>
+  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; numCPUs; i++) {
+    cluster.fork();
+  }
+
+  cluster.on(<span class="string">'exit'</span>, <span class="function"><span class="keyword">function</span><span class="params">(worker, code, signal)</span> {</span>
+    console.log(<span class="string">'worker '</span> + worker.process.pid + <span class="string">' died'</span>);
+  });
+} <span class="keyword">else</span> {
+  <span class="comment">// Workers can share any TCP connection</span>
+  <span class="comment">// In this case its a HTTP server</span>
+  http.createServer(<span class="function"><span class="keyword">function</span><span class="params">(req, res)</span> {</span>
+    res.writeHead(<span class="number">200</span>);
+    res.end(<span class="string">"hello world\n"</span>);
+  }).listen(<span class="number">8000</span>);
+}
+</pre></td></tr></table></figure>
+
+<p>利用<code>cluster</code>，我们可以根据CPU的数量创建多个worker进程，用户的请求会被分配到不同的进程上，如果某个进程出现异常，可以直接将这个进程crash掉，而不会影响其他进程。<br>关于<code>cluster</code>实现原理的介绍文章非常多，想深入了解的可以自行搜索一下。</p>
+<h4 id="3-1-1_graceful_+_recluster">3.1.1 graceful + recluster</h4>
+<p>数据产品中使用graceful + recluster两个模块实现多进程和服务器稳定性的工作，分享一下使用方法：</p>
+<ul>
+<li><a href="https://www.npmjs.org/package/graceful" target="_blank">graceful</a> : 当uncaughtException触发后，延迟一段时间退出进程</li>
+<li><a href="https://www.npmjs.org/package/recluster" target="_blank">recluster</a> : 实现多进程，并且当有进程退出实现自动重启。</li>
+</ul>
+<p><strong>app.js</strong></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+</pre></td><td class="code"><pre><span class="keyword">var</span> app = <span class="built_in">require</span>(<span class="string">'../app'</span>);
+<span class="keyword">var</span> graceful = <span class="built_in">require</span>(<span class="string">'graceful'</span>);
+
+<span class="keyword">var</span> server = app.listen(app.get(<span class="string">'port'</span>), <span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>
+    debug(<span class="string">'Express server listening on port '</span> + server.address().port);
+});
+
+graceful({
+    server: server,
+    killTimeout: <span class="number">30000</span>,
+    error:<span class="function"><span class="keyword">function</span><span class="params">(e)</span>{</span>
+        logger.error(e);
+    }
+});
+</pre></td></tr></table></figure>
+
+<p><strong>server.js</strong></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+</pre></td><td class="code"><pre><span class="keyword">var</span> recluster = <span class="built_in">require</span>(<span class="string">'recluster'</span>),
+    path = <span class="built_in">require</span>(<span class="string">'path'</span>);
+
+<span class="keyword">var</span> cluster = recluster(path.join(__dirname, <span class="string">'app.js'</span>));
+cluster.run();
+
+process.on(<span class="string">'SIGUSR2'</span>, <span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>
+    console.log(<span class="string">'Got SIGUSR2, reloading cluster...'</span>);
+    cluster.reload();
+});
+
+console.log(<span class="string">"spawned cluster, kill -s SIGUSR2"</span>, process.pid, <span class="string">"to reload"</span>);
+</pre></td></tr></table></figure>
+
+<p>开发环境,直接通过app启动:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="variable">$ </span>node app.js
+</pre></td></tr></table></figure>
+
+<p>生产环境, 启动多个 worker:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="variable">$ </span>node server.js
+</pre></td></tr></table></figure>
+
+<h4 id="3-1-2_pm2">3.1.2 pm2</h4>
+<p>如果你觉得graceful + recluster的方式太复杂，那么<a href="https://github.com/Unitech/pm2" target="_blank">pm2</a>肯定是你最理想的选择。<br>pm2非常强大，生产环境使用pm2启动你的Node服务是个不错的选择，他能自动利用你的多核cup，完善的监控，日志记录等等..</p>
+<p>pm2使用非常简单：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="variable">$ </span>npm install pm2<span class="variable">@latest</span> -g
+</pre></td></tr></table></figure>
+
+<figure class="highlight sh"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="variable">$ </span>pm2 start app.js
+</pre></td></tr></table></figure>
+
+<figure class="highlight sh"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="variable">$ </span>pm2 list
+</pre></td></tr></table></figure>
+
+<p><img src="https://github.com/unitech/pm2/raw/master/pres/pm2-list.png" alt="pm2"></p>
+<p>如果你想更多的了解pm2，可以直接看pm2的文档:<a href="https://github.com/Unitech/pm2" target="_blank">https://github.com/Unitech/pm2</a></p>
+<p>不过正是由于pm2功能太过强大，我们没有选择pm2，因为他太复杂了，感觉还没有能力驾驭他，特别是万一出现问题，我们还不知道如何解决。也许我们的顾虑是多余的，不过需要一点时间去了解他。</p>
+<h2 id="小结">小结</h2>
+<p>刚开始学习Node的使用，对Node确实有点小担心，因为使用别的语言做Web服务，根本不用担心因为一个错误导致整个服务crash的问题。<br>随着对Node的了解，我掌握了一些技巧，也打消了一些顾虑。<br>不过毕竟Node应用经验有限，所以欢迎大家一起探讨，积累更多宝贵的经验。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://satans17.github.io/2014/05/04/node稳定性的研究心得/" data-id="l4k1nnwxhejspxvi" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Node.js/">Node.js</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+
+
+  
     <article id="post-也谈基于nodejs的全栈式开发（基于nodejs的前后端分离）" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2014/04/04/也谈基于nodejs的全栈式开发（基于nodejs的前后端分离）/" class="article-date">
@@ -178,7 +609,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://satans17.github.io/2014/04/04/也谈基于nodejs的全栈式开发（基于nodejs的前后端分离）/" data-id="19ud5168pag5a3xz" class="article-share-link">Share</a>
+      <a data-url="http://satans17.github.io/2014/04/04/也谈基于nodejs的全栈式开发（基于nodejs的前后端分离）/" data-id="a6cvuo5969ml8v0r" class="article-share-link">Share</a>
       
       
     </footer>
@@ -293,7 +724,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://satans17.github.io/2014/01/06/移动开发前端框架选型/" data-id="xfv7uqs5lvuct58d" class="article-share-link">Share</a>
+      <a data-url="http://satans17.github.io/2014/01/06/移动开发前端框架选型/" data-id="xuzdhck20q55nmz5" class="article-share-link">Share</a>
       
       
     </footer>
@@ -468,7 +899,7 @@ console.log(document.documentElement.clientHeight);
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://satans17.github.io/2013/12/09/viewport笔记/" data-id="gr0a8obpcq018s90" class="article-share-link">Share</a>
+      <a data-url="http://satans17.github.io/2013/12/09/viewport笔记/" data-id="ehpe6zu0ojl0li9c" class="article-share-link">Share</a>
       
       
     </footer>
@@ -515,7 +946,7 @@ console.log(document.documentElement.clientHeight);
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://satans17.github.io/2013/11/21/请各位小伙伴们帮忙做一个简单的测试/" data-id="bsoiygshiiyozxam" class="article-share-link">Share</a>
+      <a data-url="http://satans17.github.io/2013/11/21/请各位小伙伴们帮忙做一个简单的测试/" data-id="mr0fzigibtc51pmx" class="article-share-link">Share</a>
       
       
     </footer>
@@ -697,7 +1128,7 @@ console.log(document.documentElement.clientHeight);
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://satans17.github.io/2013/11/02/css3-transitions-你可能不知道的知识点/" data-id="yy15u4henx6hmmyt" class="article-share-link">Share</a>
+      <a data-url="http://satans17.github.io/2013/11/02/css3-transitions-你可能不知道的知识点/" data-id="7pbgw7uatalj2bw9" class="article-share-link">Share</a>
       
       
     </footer>
@@ -760,7 +1191,7 @@ console.log(document.documentElement.clientHeight);
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://satans17.github.io/2013/08/04/教你如何耍流氓/" data-id="c2ic005gu5dawx1h" class="article-share-link">Share</a>
+      <a data-url="http://satans17.github.io/2013/08/04/教你如何耍流氓/" data-id="84p789thr14u4u9p" class="article-share-link">Share</a>
       
       
     </footer>
@@ -838,7 +1269,7 @@ console.log(document.documentElement.clientHeight);
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://satans17.github.io/2013/04/28/跨终端实践：丢掉你的数据线吧（售后维权图片上传功能增强改造）/" data-id="k6kuviu5vewfz8d3" class="article-share-link">Share</a>
+      <a data-url="http://satans17.github.io/2013/04/28/跨终端实践：丢掉你的数据线吧（售后维权图片上传功能增强改造）/" data-id="mv341fgwk81be4fj" class="article-share-link">Share</a>
       
       
     </footer>
@@ -880,7 +1311,7 @@ console.log(document.documentElement.clientHeight);
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://satans17.github.io/2013/01/30/利用html5特性实现“web截屏”/" data-id="z1nf1hsoudv14nm8" class="article-share-link">Share</a>
+      <a data-url="http://satans17.github.io/2013/01/30/利用html5特性实现“web截屏”/" data-id="i83zk9dpqmgn8d1x" class="article-share-link">Share</a>
       
       
     </footer>
@@ -922,7 +1353,7 @@ console.log(document.documentElement.clientHeight);
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://satans17.github.io/2013/01/01/hello-world/" data-id="a5bv2kdzec0gnl2c" class="article-share-link">Share</a>
+      <a data-url="http://satans17.github.io/2013/01/01/hello-world/" data-id="vj73uej3sasujadq" class="article-share-link">Share</a>
       
       
     </footer>
@@ -945,14 +1376,28 @@ console.log(document.documentElement.clientHeight);
     
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Node.js/">Node.js</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Node.js/" style="font-size: NaNpx;">Node.js</a>
+    </div>
+  </div>
+
   
     
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04">April 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/01">January 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12">December 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/11">November 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/08">August 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/04">April 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01">January 2013</a><span class="archive-list-count">2</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/05">May 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04">April 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/01">January 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12">December 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/11">November 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/08">August 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/04">April 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01">January 2013</a><span class="archive-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -962,6 +1407,10 @@ console.log(document.documentElement.clientHeight);
     <h3 class="widget-title">Recents</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2014/05/04/node稳定性的研究心得/">Node稳定性的研究心得</a>
+          </li>
         
           <li>
             <a href="/2014/04/04/也谈基于nodejs的全栈式开发（基于nodejs的前后端分离）/">也谈基于NodeJS的全栈式开发（基于NodeJS的前后端分离）</a>
@@ -977,10 +1426,6 @@ console.log(document.documentElement.clientHeight);
         
           <li>
             <a href="/2013/11/21/请各位小伙伴们帮忙做一个简单的测试/">请各位小伙伴们帮忙做一个简单的测试</a>
-          </li>
-        
-          <li>
-            <a href="/2013/11/02/css3-transitions-你可能不知道的知识点/">CSS3 Transitions 你可能不知道的知识点</a>
           </li>
         
       </ul>
